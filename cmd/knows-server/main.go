@@ -9,9 +9,9 @@ import (
 func main() {
 	s := knows.NewServer()
 
-	u, _ := s.Create(*knows.NewKnow("title 1", []string{"simple", "first", "karl"}, []byte("a whole ass long string")))
-	s.Create(*knows.NewKnow("title 2", []string{"simple", "second", "karl"}, []byte("a whole ass long string")))
-	s.Create(*knows.NewKnow("title 3", []string{"simple", "third", "karl"}, []byte("a whole ass long string")))
+	u, _ := s.Create(*knows.NewKnow("title 1", []string{"simple", "first", "karl"}, []byte("a whole long string")))
+	s.Create(*knows.NewKnow("title 2", []string{"simple", "second", "karl"}, []byte("a whole long string")))
+	s.Create(*knows.NewKnow("title 3", []string{"simple", "third", "karl"}, []byte("a whole long string")))
 
 	kn := s.Read(u)
 	fmt.Println(kn.String(), "\n")
