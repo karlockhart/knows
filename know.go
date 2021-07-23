@@ -1,6 +1,7 @@
 package knows
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -18,20 +19,37 @@ type Know struct {
 	ref    *knowRef
 }
 
-func NewKnow(title string, tags []string, body []byte) *Know {
+func EmptyKnow() *Know {
 	k := &Know{
-		UUID:   uuid.New().String(),
-		Title:  title,
-		Tags:   tags,
-		Body:   body,
-		Create: time.Now(),
-		Update: time.Now(),
-		ref:    &knowRef{},
+		ref: &knowRef{},
 	}
 
 	k.updateRef()
 
 	return k
+}
+
+func NewKnow(title string, tags []string, body []byte) *Know {
+	k := EmptyKnow()
+	k.UUID = uuid.New().String()
+	k.Title = title
+	k.Tags = tags
+	k.Body = body
+	k.Create = time.Now()
+	k.Update = time.Now()
+
+	return k
+}
+
+func KnowFromData(data []byte) (*Know, error) {
+	k := EmptyKnow()
+
+	err := json.Unmarshal(data, &k)
+	if err != nil {
+		return nil, err
+	}
+
+	return k, nil
 }
 
 func (k *Know) update(u Know) {

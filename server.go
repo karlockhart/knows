@@ -1,7 +1,11 @@
 package knows
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
 	"strings"
 )
 
@@ -45,13 +49,26 @@ type Server struct {
 	index tagIndex
 }
 
-func NewServer() *Server {
+func NewServer() (*Server, error) {
 	s := Server{}
 	s.cache = make(map[string]*Know)
 	s.index = tagIndex{}
 	s.index.idx = map[string]*refContainer{}
 
-	return &s
+	files, _ := os.ReadDir("data")
+
+	for _, f := range files {
+		data, err := ioutil.ReadFile(fmt.Sprintf("data/%s", f.Name()))
+		if err != nil {
+			log.Println(err)
+		}
+
+		know, err := KnowFromData(data)
+
+		s.load(*know)
+	}
+
+	return &s, nil
 }
 
 func (s *Server) Create(k Know) (string, error) {
@@ -66,7 +83,24 @@ func (s *Server) Create(k Know) (string, error) {
 	s.cache[k.UUID] = &k
 	s.index.index(k.UUID, k.Tags, k.ref)
 
+	d, err := json.Marshal(k)
+	if err != nil {
+		panic(err)
+	}
+	ioutil.WriteFile(fmt.Sprintf("data/%s.json", k.UUID), d, 0644)
+
 	return k.UUID, nil
+}
+
+func (s *Server) load(k Know) error {
+	if _, ok := s.cache[k.UUID]; ok {
+		return fmt.Errorf("%s already exists", k.UUID)
+	}
+
+	s.cache[k.UUID] = &k
+	s.index.index(k.UUID, k.Tags, k.ref)
+
+	return nil
 }
 
 func (s *Server) Read(uuid string) *Know {
@@ -80,6 +114,14 @@ func (s *Server) Update(uuid string, k Know) error {
 	if v, ok := s.cache[uuid]; ok {
 		v.update(k)
 		s.index.index(uuid, k.Tags, v.ref)
+
+		d, err := json.Marshal(k)
+		if err != nil {
+			panic(err)
+		}
+
+		os.Remove(fmt.Sprintf("data/%s.json", uuid))
+		ioutil.WriteFile(fmt.Sprintf("data/%s.json", k.UUID), d, 0644)
 
 		return nil
 	}
@@ -111,6 +153,8 @@ func (s *Server) Delete(uuid string) error {
 	k.delete()
 	s.index.remove(uuid, k.ref)
 	delete(s.cache, uuid)
+
+	os.Remove(fmt.Sprintf("data/%s.json", uuid))
 
 	return nil
 }

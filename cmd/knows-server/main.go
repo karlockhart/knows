@@ -7,7 +7,10 @@ import (
 )
 
 func main() {
-	s := knows.NewServer()
+	s, err := knows.NewServer()
+	if err != nil {
+		panic(err)
+	}
 
 	u, _ := s.Create(*knows.NewKnow("title 1", []string{"simple", "first", "karl"}, []byte("a whole long string")))
 	s.Create(*knows.NewKnow("title 2", []string{"simple", "second", "karl"}, []byte("a whole long string")))
