@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"strings"
 )
@@ -45,28 +44,21 @@ func (t *tagIndex) remove(uuid string, ref *knowRef) {
 }
 
 type Server struct {
-	cache map[string]*Know
-	index tagIndex
+	cache     map[string]*Know
+	index     tagIndex
+	persistor Persistor
 }
 
-func NewServer() (*Server, error) {
-	s := Server{}
-	s.cache = make(map[string]*Know)
-	s.index = tagIndex{}
-	s.index.idx = map[string]*refContainer{}
-
-	files, _ := os.ReadDir("data")
-
-	for _, f := range files {
-		data, err := ioutil.ReadFile(fmt.Sprintf("data/%s", f.Name()))
-		if err != nil {
-			log.Println(err)
-		}
-
-		know, err := KnowFromData(data)
-
-		s.load(*know)
+func NewServer(p Persistor) (*Server, error) {
+	s := Server{
+		persistor: p,
+		cache:     make(map[string]*Know),
+		index: tagIndex{
+			idx: map[string]*refContainer{},
+		},
 	}
+
+	s.persistor.ProcessAll(s.load)
 
 	return &s, nil
 }
@@ -92,12 +84,17 @@ func (s *Server) Create(k Know) (string, error) {
 	return k.UUID, nil
 }
 
-func (s *Server) load(k Know) error {
+func (s *Server) load(data []byte) error {
+	k, err := KnowFromData(data)
+	if err != nil {
+		return err
+	}
+
 	if _, ok := s.cache[k.UUID]; ok {
 		return fmt.Errorf("%s already exists", k.UUID)
 	}
 
-	s.cache[k.UUID] = &k
+	s.cache[k.UUID] = k
 	s.index.index(k.UUID, k.Tags, k.ref)
 
 	return nil

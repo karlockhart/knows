@@ -7,7 +7,8 @@ import (
 )
 
 func main() {
-	s, err := knows.NewServer()
+	p := knows.NewFileSystemPersistor("data")
+	s, err := knows.NewServer(p)
 	if err != nil {
 		panic(err)
 	}
